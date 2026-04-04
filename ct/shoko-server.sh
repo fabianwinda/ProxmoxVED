@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-source <(curl -fsSL https://raw.githubusercontent.com/fabianwinda/ProxmoxVED/main/misc/build.func)
+source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVED/main/misc/build.func)
 
 # Copyright (c) 2021-2026 community-scripts ORG
-# Author: FabianWinda
-# License: MIT | https://github.com/fabianwinda/ProxmoxVED/raw/main/LICENSE
+# Author: [YourGitHubUsername]
+# License: MIT | https://github.com/community-scripts/ProxmoxVED/raw/main/LICENSE
 # Source: https://github.com/ShokoAnime/ShokoServer
 
-APP="Shoko Server"
+APP="ShokoServer"
 var_tags="${var_tags:-media;anime}"
 var_cpu="${var_cpu:-2}"
 var_ram="${var_ram:-2048}"
@@ -30,7 +30,8 @@ function update_script() {
     exit
   fi
 
-  if check_for_gh_release "shokoserver" "ShokoAnime/ShokoServer"; then
+  RELEASE=$(curl -fsSL https://api.github.com/repos/ShokoAnime/ShokoServer/releases/latest | grep "tag_name" | awk '{print substr($2, 2, length($2)-3) }')
+  if [[ ! -f /opt/${APP}_version.txt ]] || [[ "${RELEASE}" != "$(cat /opt/${APP}_version.txt)" ]]; then
     msg_info "Stopping Shoko Server"
     systemctl stop shoko-server
     msg_ok "Stopped Shoko Server"
@@ -40,11 +41,14 @@ function update_script() {
     msg_ok "Backup Created"
 
     msg_info "Updating Shoko Server to v${RELEASE}"
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "shokoserver" "ShokoAnime/ShokoServer" "tarball" "latest" "/opt/shokoserver"
+    curl -fsSL "https://github.com/ShokoAnime/ShokoServer/releases/download/${RELEASE}/Shoko.CLI_Framework_any-x64.zip" -o /opt/shoko-server.zip
+    $STD unzip -q /opt/shoko-server.zip -d /opt/shokoserver/
+    rm -f /opt/shoko-server.zip
     msg_ok "Updated Shoko Server"
 
     msg_info "Restoring Configuration"
     cp /opt/shokoserver_appsettings.bak /opt/shokoserver/appsettings.json 2>/dev/null || true
+    rm -f /opt/shokoserver_appsettings.bak
     msg_ok "Restored Configuration"
 
     msg_info "Starting Shoko Server"
@@ -55,9 +59,10 @@ function update_script() {
     rm -f /opt/shokoserver_appsettings.bak
     msg_ok "Cleanup Completed"
 
+    echo "${RELEASE}" >/opt/${APP}_version.txt
     msg_ok "Update Successful"
   else
-    msg_ok "No update required. ${APP} is already at the latest version"
+    msg_ok "No update required. ${APP} is already at v${RELEASE}"
   fi
   exit
 }

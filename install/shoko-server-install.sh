@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
 # Copyright (c) 2021-2026 community-scripts ORG
-# Author: FabianWinda
-# License: MIT | https://github.com/fabianwinda/ProxmoxVED/raw/main/LICENSE
+# Author: [YourGitHubUsername]
+# License: MIT | https://github.com/community-scripts/ProxmoxVED/raw/main/LICENSE
 # Source: https://github.com/ShokoAnime/ShokoServer
 
+APP="ShokoServer"
 source /dev/stdin <<<"$FUNCTIONS_FILE_PATH"
 color
 verb_ip6
@@ -19,6 +20,7 @@ $STD apt-get install -y \
   sudo \
   mc \
   wget \
+  unzip \
   apt-transport-https \
   software-properties-common \
   libmediainfo-dev \
@@ -38,19 +40,17 @@ msg_ok "Installed .NET 8.0"
 msg_info "Creating Directories"
 mkdir -p /opt/shokoserver
 mkdir -p /mnt/anime
-mkdir -p ~/.shoko
 msg_ok "Created Directories"
 
 msg_info "Downloading Shoko Server"
-RELEASE=$(curl -s https://api.github.com/repos/ShokoAnime/ShokoServer/releases/latest | grep "tag_name" | awk '{print substr($2, 2, length($2)-3)}')
-curl -fsSL "https://github.com/ShokoAnime/ShokoServer/releases/download/${RELEASE}/Shoko.CLI-linux-x64.tar.gz" -o shoko-server.tar.gz
-tar -xzf shoko-server.tar.gz -C /opt/shokoserver/
-rm -f shoko-server.tar.gz
+RELEASE=$(curl -fsSL https://api.github.com/repos/ShokoAnime/ShokoServer/releases/latest | grep "tag_name" | awk '{print substr($2, 2, length($2)-3) }')
+curl -fsSL "https://github.com/ShokoAnime/ShokoServer/releases/download/${RELEASE}/Shoko.CLI_Framework_any-x64.zip" -o shoko-server.zip
+$STD unzip -q shoko-server.zip -d /opt/shokoserver/
+rm -f shoko-server.zip
 echo "${RELEASE}" >/opt/${APP}_version.txt
 msg_ok "Downloaded Shoko Server"
 
 msg_info "Configuring Shoko Server"
-chown -R root:root /opt/shokoserver
 chmod +x /opt/shokoserver/Shoko.CLI
 cat <<EOF >/opt/shokoserver/.env
 SHOKO_HOME=/root/.shoko
@@ -79,16 +79,6 @@ EOF
 systemctl enable -q --now shoko-server.service
 msg_ok "Created Service"
 
-msg_info "Waiting for Shoko Server to initialize"
-sleep 10
-for i in {1..30}; do
-  if curl -s http://localhost:8111/api/v3/init/status >/dev/null 2>&1; then
-    break
-  fi
-  sleep 2
-done
-msg_ok "Shoko Server is running"
-
 motd_ssh
 customize
 cleanup_lxc
@@ -97,20 +87,3 @@ msg_info "Cleaning up"
 $STD apt-get -y autoremove
 $STD apt-get -y autoclean
 msg_ok "Cleaned"
-
-{
-echo ""
-echo "Shoko Server Installation Complete"
-echo "==================================="
-echo "Access the Web UI at: http://${LOCAL_IP}:8111"
-echo ""
-echo "Important Setup Steps:"
-echo "1. Create an admin account on first start via the Web UI"
-echo "2. Configure your AniDB account in Settings > AniDB"
-echo "3. Set up import folders in Settings > Import Folders"
-echo "   Example: /mnt/anime"
-echo ""
-echo "Note: An AniDB account is required for full functionality."
-echo "      Register at https://anidb.net/ if you don't have one."
-} >>/etc/update-motd.d/99-shoko-server
-chmod +x /etc/update-motd.d/99-shoko-server

@@ -48,8 +48,17 @@ if [[ -z "${RELEASE}" ]]; then
   msg_error "Failed to retrieve latest Shoko Server version"
   exit 1
 fi
-if ! curl -fsSL "https://github.com/ShokoAnime/ShokoServer/releases/download/${RELEASE}/Shoko.CLI_Framework_any-x64.zip" -o shoko-server.zip; then
-  msg_error "Failed to download Shoko Server"
+msg_info "Found Shoko Server v${RELEASE}, downloading..."
+if ! curl -fsSL --retry 3 --retry-delay 2 "https://github.com/ShokoAnime/ShokoServer/releases/download/${RELEASE}/Shoko.CLI_Framework_any-x64.zip" -o shoko-server.zip; then
+  msg_error "Failed to download Shoko Server (HTTP error)"
+  exit 1
+fi
+if [[ ! -f shoko-server.zip ]] || [[ ! -s shoko-server.zip ]]; then
+  msg_error "Downloaded file is empty or missing"
+  exit 1
+fi
+if ! unzip -t shoko-server.zip &>/dev/null; then
+  msg_error "Downloaded file is not a valid zip archive"
   exit 1
 fi
 $STD unzip -q shoko-server.zip -d /opt/shokoserver/

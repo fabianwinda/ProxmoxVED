@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-source <(curl -fsSL https://raw.githubusercontent.com/fabianwinda/ProxmoxVED/main/misc/build.func)
+# Force fresh download by adding cache-buster
+source <(curl -fsSL "https://raw.githubusercontent.com/fabianwinda/ProxmoxVED/main/misc/build.func?nocache=$(date +%s)")
 
 # Copyright (c) 2021-2026 fabianwinda ORG
 # Author: fabianwinda
@@ -14,6 +15,9 @@ var_disk="${var_disk:-8}"
 var_os="${var_os:-debian}"
 var_version="${var_version:-12}"
 var_unprivileged="${var_unprivileged:-1}"
+
+# Ensure correct install script name (override build.func default)
+var_install="shokoserver-install"
 
 header_info "$APP"
 variables

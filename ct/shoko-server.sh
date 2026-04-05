@@ -41,9 +41,19 @@ function update_script() {
     msg_ok "Backup Created"
 
     msg_info "Updating Shoko Server to v${RELEASE}"
-    curl -fsSL "https://github.com/ShokoAnime/ShokoServer/releases/download/${RELEASE}/Shoko.CLI_Framework_any-x64.zip" -o /opt/shoko-server.zip
+    curl -fsSL --retry 3 --retry-delay 2 "https://github.com/ShokoAnime/ShokoServer/releases/download/${RELEASE}/Shoko.CLI_Framework_any-x64.zip" -o /opt/shoko-server.zip
+    if ! unzip -t /opt/shoko-server.zip >/dev/null 2>&1; then
+      msg_error "Downloaded file is not a valid zip archive"
+      exit 1
+    fi
     $STD unzip -q /opt/shoko-server.zip -d /opt/shokoserver/
+    # Move files from publish subdirectory if they exist
+    if [[ -d /opt/shokoserver/publish ]]; then
+      mv /opt/shokoserver/publish/* /opt/shokoserver/
+      rmdir /opt/shokoserver/publish 2>/dev/null || true
+    fi
     rm -f /opt/shoko-server.zip
+    chmod +x /opt/shokoserver/Shoko.CLI
     msg_ok "Updated Shoko Server"
 
     msg_info "Restoring Configuration"

@@ -67,6 +67,11 @@ echo "${RELEASE}" >/opt/${APP}_version.txt
 msg_ok "Downloaded Shoko Server v${RELEASE}"
 
 msg_info "Configuring Shoko Server"
+# Move files from publish subdirectory if they exist
+if [[ -d /opt/shokoserver/publish ]]; then
+  mv /opt/shokoserver/publish/* /opt/shokoserver/
+  rmdir /opt/shokoserver/publish 2>/dev/null || true
+fi
 chmod +x /opt/shokoserver/Shoko.CLI
 cat <<EOF >/opt/shokoserver/.env
 SHOKO_HOME=/root/.shoko

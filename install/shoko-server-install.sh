@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Copyright (c) 2021-2026 community-scripts ORG
-# Author: [YourGitHubUsername]
+# Author: fabianwinda
 # License: MIT | https://github.com/community-scripts/ProxmoxVED/raw/main/LICENSE
 # Source: https://github.com/ShokoAnime/ShokoServer
 
@@ -44,11 +44,18 @@ msg_ok "Created Directories"
 
 msg_info "Downloading Shoko Server"
 RELEASE=$(curl -fsSL https://api.github.com/repos/ShokoAnime/ShokoServer/releases/latest | grep "tag_name" | awk '{print substr($2, 2, length($2)-3) }')
-curl -fsSL "https://github.com/ShokoAnime/ShokoServer/releases/download/${RELEASE}/Shoko.CLI_Framework_any-x64.zip" -o shoko-server.zip
+if [[ -z "${RELEASE}" ]]; then
+  msg_error "Failed to retrieve latest Shoko Server version"
+  exit 1
+fi
+if ! curl -fsSL "https://github.com/ShokoAnime/ShokoServer/releases/download/${RELEASE}/Shoko.CLI_Framework_any-x64.zip" -o shoko-server.zip; then
+  msg_error "Failed to download Shoko Server"
+  exit 1
+fi
 $STD unzip -q shoko-server.zip -d /opt/shokoserver/
 rm -f shoko-server.zip
 echo "${RELEASE}" >/opt/${APP}_version.txt
-msg_ok "Downloaded Shoko Server"
+msg_ok "Downloaded Shoko Server v${RELEASE}"
 
 msg_info "Configuring Shoko Server"
 chmod +x /opt/shokoserver/Shoko.CLI
@@ -82,8 +89,3 @@ msg_ok "Created Service"
 motd_ssh
 customize
 cleanup_lxc
-
-msg_info "Cleaning up"
-$STD apt-get -y autoremove
-$STD apt-get -y autoclean
-msg_ok "Cleaned"
